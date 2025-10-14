@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jawara.AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo">Jawara.AI</div>
+      <div class="header-buttons">
+        <button id="help-btn" title="Petunjuk Penggunaan">Petunjuk</button>
+        <button id="new-chat" title="Percakapan Baru">🗘 Percakapan Baru</button>
+      </div>
+    </header>
+
+    <div class="messages" id="messages"></div>
+
+    <form id="chat-form">
+      <textarea id="input" placeholder="Tulis pesan..."></textarea>
+      <button type="submit">Kirim</button>
+    </form>
+  </div>
+
+  <!-- Pop-up Instruction -->
+  <div id="help-popup" class="popup">
+    <div class="popup-content">
+      <span id="close-popup">&times;</span>
+      <h2>💡 Petunjuk Penggunaan Jawara.AI</h2>
+      <p>
+        1️⃣ Ketik pertanyaan di kotak bawah lalu tekan <b>Kirim</b>.<br><br>
+        2️⃣ Jawara.AI akan menjawab berdasarkan dokumen dan regulasi terkait.<br><br>
+        3️⃣ Berikan penilaian. Jika jawaban membantu, tekan <b>👍</b> — jika tidak, tekan <b>👎</b>.<br><br>
+        4️⃣ Anda dapat memulai percakapan baru dengan menekan <b>🗘 Percakapan Baru</b>.
+      </p>
+    </div>
+  </div>
+
+<script>
+const API_URL = "http://localhost:5000/get";
+let sessionID = crypto.randomUUID();
+
+const messagesEl = document.getElementById("messages");
+const inputEl = document.getElementById("input");
+const formEl = document.getElementById("chat-form");
+const newChatBtn = document.getElementById("new-chat");
+const helpBtn = document.getElementById("help-btn");
+const popup = document.getElementById("help-popup");
+const closePopup = document.getElementById("close-popup");
+
+let typingEl = null;
+
+window.addEventListener("load", () => {
+  addMessage("bot", "👋 Selamat datang di Jawara.AI! Ada yang bisa saya bantu hari ini?");
+});
+
+function renderMarkdown(text) {
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\n/g, "<br>");
+  html = html.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>');
+  return html;
+}
+
+function addMessage(role, text, msgID = null) {
+  const div = document.createElement("div");
+  div.className = "bubble " + role;
+  div.innerHTML = renderMarkdown(text);
+
+  if (role === "bot" && msgID) {
+    const ratingDiv = document.createElement("div");
+    ratingDiv.className = "rating";
+
+    const upBtn = document.createElement("button");
+    upBtn.innerHTML = "👍";
+    const downBtn = document.createElement("button");
+    downBtn.innerHTML = "👎";
+
+    const handleClick = async (btn, value) => {
+      if (btn.classList.contains("active")) {
+        btn.classList.remove("active");
+        await sendRating(msgID, null);
+      } else {
+        upBtn.classList.remove("active");
+        downBtn.classList.remove("active");
+        btn.classList.add("active");
+        await sendRating(msgID, value);
+      }
+    };
+
+    upBtn.onclick = () => handleClick(upBtn, 1);
+    downBtn.onclick = () => handleClick(downBtn, 0);
+
+    ratingDiv.appendChild(upBtn);
+    ratingDiv.appendChild(downBtn);
+    div.appendChild(ratingDiv);
+  }
+
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function sendRating(msgID, value) {
+  await fetch("http://localhost:5000/rating", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ msgID, rating: value }),
+  });
+}
+
+function showTyping() {
+  if (typingEl) return;
+  typingEl = document.createElement("div");
+  typingEl.className = "bubble bot typing";
+  typingEl.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+  messagesEl.appendChild(typingEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function hideTyping() {
+  if (typingEl) {
+    typingEl.remove();
+    typingEl = null;
+  }
+}
+
+async function sendToAPI(msg) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionID: sessionID, msg: msg }),
+  });
+  const data = await res.json();
+  return data || "(tidak ada respons)";
+}
+
+formEl.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = inputEl.value.trim();
+  if (!msg) return;
+  addMessage("user", msg);
+  inputEl.value = "";
+  showTyping();
+  try {
+    const reply = await sendToAPI(msg);
+    hideTyping();
+    addMessage("bot", reply.answer, reply.msgID);
+  } catch (err) {
+    hideTyping();
+    addMessage("bot", "⚠️ Terjadi kesalahan: " + err.message);
+  }
+});
+
+newChatBtn.addEventListener("click", () => {
+  sessionID = crypto.randomUUID();
+  messagesEl.innerHTML = "";
+  addMessage("bot", "👋 Halo! Percakapan baru dimulai. Ada yang bisa saya bantu?");
+});
+
+// Popup Help
+helpBtn.onclick = () => (popup.style.display = "flex");
+closePopup.onclick = () => (popup.style.display = "none");
+window.onclick = (e) => { if (e.target === popup) popup.style.display = "none"; };
+</script>
+</body>
+</html>

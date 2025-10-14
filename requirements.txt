@@ -1,0 +1,18 @@
+# Dasar / env
+openai>=1.0.0
+python-dotenv>=1.0.0
+
+# Ekstraksi & olah data
+PyMuPDF>=1.23.0
+pandas>=2.0.0
+numpy>=1.24.0
+faiss-cpu>=1.7.4
+tiktoken>=0.7.0
+
+# Web backend
+Flask>=2.3.0
+flask-sock>=0.7.0
+flask-cors>=3.0.10
+
+# Database MySQL
+mysql-connector-python
