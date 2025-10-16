@@ -39,7 +39,7 @@
   </div>
 
 <script>
-const API_URL = "http://localhost:5000/get";
+const API_URL = "https://chatbotjawara-production.up.railway.app";
 let sessionID = crypto.randomUUID();
 
 const messagesEl = document.getElementById("messages");
@@ -106,7 +106,7 @@ function addMessage(role, text, msgID = null) {
 }
 
 async function sendRating(msgID, value) {
-  await fetch("http://localhost:5000/rating", {
+  await fetch(API_URL+"/rating", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ msgID, rating: value }),
@@ -130,7 +130,7 @@ function hideTyping() {
 }
 
 async function sendToAPI(msg) {
-  const res = await fetch(API_URL, {
+  const res = await fetch(API_URL+"/get", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sessionID: sessionID, msg: msg }),
