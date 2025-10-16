@@ -89,8 +89,8 @@ def get_bot_response():
         return jsonify(out)
 
     except Error as e:
-        print("❌ Database error:", e)
-        return jsonify({"error": "Database error"}), 500
+        print("❌ error /get:", e)
+        return jsonify({"error": str(e)}), 500
 
     finally:
         if cursor:
@@ -118,8 +118,8 @@ def save_rating():
         return jsonify({"status": "ok"})
 
     except Error as e:
-        print("❌ Database error:", e)
-        return jsonify({"error": "Database error"}), 500
+        print("❌ error /rating:", e)
+        return jsonify({"error": str(e)}), 500
 
     finally:
         if cursor:

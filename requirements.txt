@@ -4,6 +4,7 @@ python-dotenv>=1.0.0
 
 # Ekstraksi & olah data
 PyMuPDF>=1.23.0
+pyarrow>=21.0.0
 pandas>=2.0.0
 numpy>=1.24.0
 faiss-cpu>=1.7.4
