@@ -1,8 +1,9 @@
 import os
-from flask import Flask, jsonify, render_template, request, redirect, url_for, session
+from flask import Flask, jsonify, render_template, request
 from flask_sock import Sock
 from flask_cors import CORS
-import mysql.connector
+from sshtunnel import SSHTunnelForwarder
+from mysql.connector import pooling, Error
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -13,58 +14,118 @@ app = Flask(__name__)
 app.static_folder = 'static'
 app.config['SECRET_KEY'] = 'secret much'
 
-db = mysql.connector.connect(
-	host = os.getenv("DB_HOST"),
-	user = os.getenv("DB_USER"),
-	password = os.getenv("DB_PASS"),
-	database = os.getenv("DB_NAME")
+# -------------------------------
+# SSH Tunnel (dibuka sekali saja)
+# -------------------------------
+tunnel = SSHTunnelForwarder(
+    (os.getenv('SSH_HOST'), 22),
+    ssh_username=os.getenv('SSH_USER'),
+    ssh_password=os.getenv('SSH_PASS'),
+    remote_bind_address=(os.getenv('DB_HOST'), 3306)
 )
+tunnel.start()
 
-cursor = db.cursor(dictionary=True)
+# ------------------------------------------
+# MySQL Connection Pool (reusable connection)
+# ------------------------------------------
+try:
+    dbconfig = {
+        "host": os.getenv('DB_HOST'),
+        "port": tunnel.local_bind_port,
+        "user": os.getenv('DB_USER'),
+        "password": os.getenv('DB_PASS'),
+        "database": os.getenv('DB_NAME')
+    }
+
+    pool = pooling.MySQLConnectionPool(
+        pool_name="mypool",
+        pool_size=5,
+        pool_reset_session=True,
+        **dbconfig
+    )
+
+except Error as e:
+    print("❌ Error while creating connection pool:", e)
+    exit(1)
+
 sock = Sock(app)
 CORS(app)
 
 @app.route("/")
 def home():
-	return render_template("index.html")
+    return render_template("index.html")
+
 
 @app.route("/get", methods=['POST'])
 def get_bot_response():
-	data = request.get_json()
-	sessionID = data.get("sessionID")
-	userText = data.get("msg")
-	userTime = datetime.now()
+    conn = None
+    cursor = None
+    try:
+        data = request.get_json()
+        sessionID = data.get("sessionID")
+        userText = data.get("msg")
+        userTime = datetime.now()
 
-	out = chat.answer(userText, sessionID)
-	botTime = datetime.now()
+        # ambil koneksi dari pool
+        conn = pool.get_connection()
+        cursor = conn.cursor()
 
-	# Simpan ke database
-	cursor.execute(
-		"""
-		INSERT INTO conversations (session_id, user_msg, user_time, bot_msg, bot_time) 
-		VALUES (%s, %s, %s, %s, %s)
-		""",
-		(sessionID, userText, userTime, out['answer'], botTime)
-	)
-	db.commit()
+        out = chat.answer(userText, sessionID)
+        botTime = datetime.now()
 
-	msgID = cursor.lastrowid
-	out["msgID"] = msgID
+        # simpan ke database
+        cursor.execute(
+            """
+            INSERT INTO conversations (session_id, user_msg, user_time, bot_msg, bot_time) 
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (sessionID, userText, userTime, out['answer'], botTime)
+        )
+        conn.commit()
 
-	return jsonify(out)
+        msgID = cursor.lastrowid
+        out["msgID"] = msgID
+
+        return jsonify(out)
+
+    except Error as e:
+        print("❌ Database error:", e)
+        return jsonify({"error": "Database error"}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()  # kembali ke pool, tidak benar-benar menutup koneksi
+
 
 @app.route("/rating", methods=["POST"])
 def save_rating():
-    data = request.json
-    msgID = data.get("msgID")
-    rating = data.get("rating")
+    conn = None
+    cursor = None
+    try:
+        data = request.json
+        msgID = data.get("msgID")
+        rating = data.get("rating")
 
-    cursor.execute(
-        "UPDATE conversations SET rating=%s WHERE id=%s", (rating, msgID)
-    )
-    db.commit()
+        conn = pool.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE conversations SET rating=%s WHERE id=%s", (rating, msgID)
+        )
+        conn.commit()
 
-    return jsonify({"status": "ok"})
+        return jsonify({"status": "ok"})
+
+    except Error as e:
+        print("❌ Database error:", e)
+        return jsonify({"error": "Database error"}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 if __name__ == "__main__":
-	app.run(host="0.0.0.0",port=5000)
+    app.run(host="0.0.0.0", port=5000)
