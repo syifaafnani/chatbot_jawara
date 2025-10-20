@@ -40,6 +40,7 @@
 
 <script>
 const API_URL = "https://chatbotjawara-production.up.railway.app";
+// const API_URL = "http://localhost:5000";
 let sessionID = crypto.randomUUID();
 
 const messagesEl = document.getElementById("messages");
@@ -53,7 +54,7 @@ const closePopup = document.getElementById("close-popup");
 let typingEl = null;
 
 window.addEventListener("load", () => {
-  addMessage("bot", "👋 Selamat datang di Jawara.AI! Ada yang bisa saya bantu hari ini?");
+  addMessage("bot", "👋 Selamat datang! Saya Jawara.AI, asisten digital milik LPSPL Serang. Saya siap membantu menjawab pertanyaan seputar Kesesuaian Kegiatan Pemanfaatan Ruang Laut (KKPRL). Silakan sampaikan pertanyaan Anda 😊");
 });
 
 function renderMarkdown(text) {
@@ -159,7 +160,7 @@ formEl.addEventListener("submit", async (e) => {
 newChatBtn.addEventListener("click", () => {
   sessionID = crypto.randomUUID();
   messagesEl.innerHTML = "";
-  addMessage("bot", "👋 Halo! Percakapan baru dimulai. Ada yang bisa saya bantu?");
+  addMessage("bot", "👋 Halo! Percakapan baru dimulai. Jawara.AI siap membantu menjawab pertanyaan seputar Kesesuaian Kegiatan Pemanfaatan Ruang Laut (KKPRL). Silakan sampaikan pertanyaan Anda 😊");
 });
 
 // Popup Help
