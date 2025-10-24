@@ -4,7 +4,7 @@ from flask_sock import Sock
 from flask_cors import CORS
 from sshtunnel import SSHTunnelForwarder
 from mysql.connector import pooling, Error
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
 import rag_pdf_session as chat
@@ -64,14 +64,14 @@ def get_bot_response():
         data = request.get_json()
         sessionID = data.get("sessionID")
         userText = data.get("msg")
-        userTime = datetime.now()
+        userTime = datetime.now(timezone(timedelta(hours=7))).replace(tzinfo=None)
 
         # ambil koneksi dari pool
         conn = pool.get_connection()
         cursor = conn.cursor()
 
         out = chat.answer(userText, sessionID)
-        botTime = datetime.now()
+        botTime = datetime.now(timezone(timedelta(hours=7))).replace(tzinfo=None)
 
         # simpan ke database
         cursor.execute(
