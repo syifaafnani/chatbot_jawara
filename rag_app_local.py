@@ -2,6 +2,7 @@ import os
 from flask import Flask, jsonify, render_template, request
 from flask_sock import Sock
 from flask_cors import CORS
+from sshtunnel import SSHTunnelForwarder
 from mysql.connector import pooling, Error
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
@@ -13,13 +14,24 @@ app = Flask(__name__)
 app.static_folder = 'static'
 app.config['SECRET_KEY'] = 'secret much'
 
+# -------------------------------
+# SSH Tunnel (dibuka sekali saja)
+# -------------------------------
+tunnel = SSHTunnelForwarder(
+    (os.getenv('SSH_HOST'), 22),
+    ssh_username=os.getenv('SSH_USER'),
+    ssh_password=os.getenv('SSH_PASS'),
+    remote_bind_address=(os.getenv('DB_HOST'), 3306)
+)
+tunnel.start()
+
 # ------------------------------------------
 # MySQL Connection Pool (reusable connection)
 # ------------------------------------------
 try:
     dbconfig = {
         "host": os.getenv('DB_HOST'),
-        "port": 3306,
+        "port": tunnel.local_bind_port,
         "user": os.getenv('DB_USER'),
         "password": os.getenv('DB_PASS'),
         "database": os.getenv('DB_NAME')
@@ -39,26 +51,10 @@ except Error as e:
 sock = Sock(app)
 CORS(app)
 
-# ------------------------------------------
-# Fungsi pembantu untuk koneksi aman & stabil
-# ------------------------------------------
-def get_connection():
-    """Mendapatkan koneksi dari pool dan memastikan pool masih aktif"""
-    try:
-        conn = pool.get_connection()
-        if not conn.is_connected():
-            conn.reconnect(attempts=3, delay=2)
-        return conn
-    except Error as e:
-        print("⚠️ Error getting connection:", e)
-        return None
-
-# ------------------------------------------
-# ROUTES
-# ------------------------------------------
 @app.route("/")
 def home():
     return render_template("index.html")
+
 
 @app.route("/get", methods=['POST'])
 def get_bot_response():
@@ -72,9 +68,6 @@ def get_bot_response():
 
         # ambil koneksi dari pool
         conn = pool.get_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
-        
         cursor = conn.cursor()
 
         out = chat.answer(userText, sessionID)
@@ -103,7 +96,7 @@ def get_bot_response():
         if cursor:
             cursor.close()
         if conn:
-            conn.close()  # kembali ke pool, tanpa menutup koneksi
+            conn.close()  # kembali ke pool, tidak benar-benar menutup koneksi
 
 
 @app.route("/rating", methods=["POST"])
@@ -116,9 +109,6 @@ def save_rating():
         rating = data.get("rating")
 
         conn = pool.get_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
-        
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE conversations SET rating=%s WHERE id=%s", (rating, msgID)
