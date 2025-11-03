@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jawara.AI</title>
+  <title>VANI (Virtual Assistant and Information)</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <div class="app">
     <header>
-      <div class="logo">Jawara.AI</div>
+      <div class="logo">VANI</div>
       <div class="header-buttons">
         <button id="help-btn" title="Petunjuk Penggunaan">Petunjuk</button>
         <button id="new-chat" title="Percakapan Baru">🗘 Percakapan Baru</button>
@@ -28,10 +28,10 @@
   <div id="help-popup" class="popup">
     <div class="popup-content">
       <span id="close-popup">&times;</span>
-      <h2>💡 Petunjuk Penggunaan Jawara.AI</h2>
+      <h2>💡 Petunjuk Penggunaan VANI (Virtual Assistant and Information)</h2>
       <p>
         1️⃣ Ketik pertanyaan di kotak bawah lalu tekan <b>Kirim</b>.<br><br>
-        2️⃣ Jawara.AI akan menjawab berdasarkan dokumen dan regulasi terkait.<br><br>
+        2️⃣ VANI akan menjawab berdasarkan dokumen dan regulasi terkait.<br><br>
         3️⃣ Berikan penilaian. Jika jawaban membantu, tekan <b>👍</b> — jika tidak, tekan <b>👎</b>.<br><br>
         4️⃣ Anda dapat memulai percakapan baru dengan menekan <b>🗘 Percakapan Baru</b>.
       </p>
@@ -54,7 +54,7 @@ const closePopup = document.getElementById("close-popup");
 let typingEl = null;
 
 window.addEventListener("load", () => {
-  addMessage("bot", "👋 Selamat datang! Saya Jawara.AI, asisten digital milik LPSPL Serang. Saya siap membantu menjawab pertanyaan seputar Kesesuaian Kegiatan Pemanfaatan Ruang Laut (KKPRL). Silakan sampaikan pertanyaan Anda 😊");
+  addMessage("bot", "👋 Selamat datang! Saya VANI, Virtual Assistant and Information milik LPSPL Serang. Saya siap membantu menjawab pertanyaan seputar Kesesuaian Kegiatan Pemanfaatan Ruang Laut (KKPRL). Silakan sampaikan pertanyaan Anda 😊");
 });
 
 function renderMarkdown(text) {
@@ -160,7 +160,7 @@ formEl.addEventListener("submit", async (e) => {
 newChatBtn.addEventListener("click", () => {
   sessionID = crypto.randomUUID();
   messagesEl.innerHTML = "";
-  addMessage("bot", "👋 Halo! Percakapan baru dimulai. Jawara.AI siap membantu menjawab pertanyaan seputar Kesesuaian Kegiatan Pemanfaatan Ruang Laut (KKPRL). Silakan sampaikan pertanyaan Anda 😊");
+  addMessage("bot", "👋 Halo! Percakapan baru dimulai. VANI siap membantu menjawab pertanyaan seputar Kesesuaian Kegiatan Pemanfaatan Ruang Laut (KKPRL). Silakan sampaikan pertanyaan Anda 😊");
 });
 
 // Popup Help

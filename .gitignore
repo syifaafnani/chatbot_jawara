@@ -1,5 +1,6 @@
 __pycache__/
 .conda/
 docs/
+vectorstore1/
 .env
 rag_pdf.py
