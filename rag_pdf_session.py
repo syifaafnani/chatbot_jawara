@@ -342,7 +342,7 @@ if __name__ == "__main__":
         build_or_update_index(args.pdfs, args.store)
 
     if args.ask:
-        res = answer(args.ask, args.topk, args.store)
+        res = answer(query=args.ask, top_k=args.topk, store_dir=args.store)
         print("\n=== JAWABAN ===\n")
         print(res["answer"])
         print("\n=== SITASI ===")

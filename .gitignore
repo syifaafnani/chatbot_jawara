@@ -4,3 +4,4 @@ docs/
 vectorstore1/
 .env
 rag_pdf.py
+rag_app_mysql.py
